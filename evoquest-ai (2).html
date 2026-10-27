@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EvoQuest_AI</title>
+<style>
+:root{--bg:#03000d;--fg:#fff;--acc:#7c4dff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#03000d}}
+:root[data-theme="dark"]{--bg:#03000d}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--fg);font-family:Arial,sans-serif;text-align:center}
+.screen{display:none;min-height:100vh;flex-direction:column;align-items:center;justify-content:center;padding:16px;background:radial-gradient(circle at center,#160052,#03000d 70%)}
+.screen.on{display:flex}
+h1{font-size:clamp(28px,7vw,58px);letter-spacing:5px;margin:0 0 10px;text-shadow:0 0 18px #7c4dff}
+p{max-width:480px;line-height:1.5;color:#c9c2e8}
+button{padding:12px 34px;margin:6px;border:0;border-radius:30px;font-size:17px;cursor:pointer;background:var(--acc);color:#fff}
+button:hover{transform:scale(1.06)}
+button.sec{background:#ffffff18;border:1px solid #fff3;padding:9px 20px;font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(70px,100px));gap:12px;margin:16px 0}
+.lv{padding:14px 4px;border-radius:14px;background:#ffffff12;border:1px solid #fff3;cursor:pointer;font-size:15px}
+.lv.lock{opacity:.4;cursor:not-allowed}
+.hud{width:min(100%,800px);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;padding:8px 4px;font-size:16px}
+.hud b{color:cyan;text-shadow:0 0 8px cyan}
+#timer.low{color:red}
+canvas{width:800px;max-width:100%;height:auto;border:3px solid #7c4dff;border-radius:15px;box-shadow:0 0 20px #7c4dff,0 0 50px rgba(124,77,255,.4);background:#050014}
+.instruction{color:#aaa;font-size:14px;margin:8px 0 2px}
+#ai{width:min(100%,800px);font-size:13px;line-height:1.45;color:#c9b8ff;margin:4px 0;text-align:left;background:#ffffff0d;border-radius:10px;padding:8px 12px}
+.pad{display:grid;grid-template-columns:repeat(3,56px);gap:6px;justify-content:center;margin:8px 0}.pad button{margin:0;padding:0;height:56px;border-radius:14px;font-size:22px;touch-action:none;user-select:none}.pad .u{grid-column:2}.pad .l{grid-column:1;grid-row:2}.pad .d{grid-column:2;grid-row:2}.pad .r{grid-column:3;grid-row:2}
+.over{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(5,0,20,.93);z-index:5;padding:20px}
+.over.on{display:flex}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;800&display=swap" rel="stylesheet">
+<style>
+:root{--ff:'Orbitron','Trebuchet MS',system-ui,sans-serif}
+body{font-family:var(--ff)}
+.screen{position:relative;overflow:hidden;background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--acc) 35%,#03000d),#03000d 70%)}
+.screen::before{content:"";position:absolute;inset:0;background:linear-gradient(#ffffff08 1px,transparent 1px) 0 0/40px 40px,linear-gradient(90deg,#ffffff08 1px,transparent 1px) 0 0/40px 40px;mask-image:radial-gradient(circle,#000 20%,transparent 75%);pointer-events:none}
+.screen>*{position:relative;z-index:1}
+h1{font-family:var(--ff);font-weight:800;background:linear-gradient(90deg,#fff,var(--acc),#00e5ff);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 0 14px var(--acc));animation:fl 3s infinite alternate}
+@keyframes fl{to{filter:drop-shadow(0 0 28px #00e5ff)}}
+.tag{font-size:12px;letter-spacing:3px;color:#00e5ff}
+button{font-family:var(--ff);text-transform:uppercase;letter-spacing:2px;background:linear-gradient(135deg,var(--acc),#00e5ff66);border:1px solid #fff5;box-shadow:0 0 16px var(--acc);font-size:15px}
+button.sec{background:#ffffff14;box-shadow:none;font-size:13px}
+.clock{position:absolute!important;width:min(78vw,460px);aspect-ratio:1;border-radius:50%;border:2px dashed var(--acc);opacity:.4;animation:sp 24s linear infinite;z-index:0!important}
+.clock::after{content:"";position:absolute;inset:12%;border:3px solid #00e5ff;border-left-color:transparent;border-bottom-color:transparent;border-radius:50%;animation:sp 6s linear infinite reverse}
+.clock i{position:absolute;left:50%;top:4%;width:3px;height:46%;margin-left:-1px;background:linear-gradient(var(--acc),transparent);transform-origin:bottom;animation:sp 10s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.grid{grid-template-columns:repeat(5,minmax(58px,90px))!important;gap:10px!important}
+.wh{grid-column:1/-1;text-align:left;color:var(--c);letter-spacing:3px;font-size:12px;margin-top:10px;border-bottom:1px solid var(--c);padding-bottom:4px}
+.lv{border:1px solid var(--c)!important;box-shadow:inset 0 0 12px color-mix(in srgb,var(--c) 30%,transparent);padding:10px 2px!important;border-radius:12px}
+.lv span{display:block;font-weight:800;font-size:20px}.lv small{font-size:11px}
+.lv:not(.lock):hover{transform:translateY(-3px);box-shadow:0 0 16px var(--c)}
+.hud span{background:#ffffff12;border:1px solid #fff2;border-radius:999px;padding:6px 14px;font-size:14px}
+.tbar{width:min(100%,800px);height:6px;background:#ffffff18;border-radius:3px;overflow:hidden;margin-bottom:8px}
+.tbar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,var(--acc),#00e5ff)}
+canvas{border-color:var(--acc)!important;box-shadow:0 0 22px var(--acc),0 0 60px color-mix(in srgb,var(--acc) 40%,transparent)!important}
+#ai{border-left:3px solid var(--acc);font-family:system-ui,sans-serif}
+</style>
+</head>
+<body>
+
+<section class="screen on" id="home">
+  <div class="clock"><i></i></div><h1>⏳ EVOQUEST_AI</h1>
+  <p>Break the loop. Outsmart your past.</p><p class="tag">50 LEVELS · 5 WORLDS · AN AI THAT LEARNS YOU</p>
+  <div><button onclick="show('levels')">PLAY NOW</button><button onclick="show('story')">HOW TO PLAY</button></div>
+</section>
+
+<section class="screen" id="story">
+  <h1>⏳ THE LOOP HAS BEGUN...</h1>
+  <p>You have 10 seconds per loop. Every action you perform is remembered by your Past Self.</p>
+  <p>When the loop resets, your Past Self repeats your actions. Stand on a button and stay there until time runs out, then your Past Self holds it for you while you walk through the gate. Lasers are deadly. Each gate has its own button (A, B, C, D). Collect the gold coins (+10). From level 4 a Sentinel AI hunts you: it studies the places you favour in earlier loops and heads there, so change your routes! Buttons are safe zones.</p>
+  <button onclick="show('levels')">START</button>
+</section>
+
+<section class="screen" id="levels">
+  <h1>SELECT LEVEL</h1>
+  <div class="grid" id="lvGrid"></div>
+  <button class="sec" onclick="show('home')">HOME</button>
+</section>
+
+<section class="screen" id="game">
+  <div class="hud"><span>LEVEL <b id="hLvl">1</b></span><span>LOOP <b id="hLoop">1</b></span><span>⭐ <b id="hScore">0</b></span><span id="hLives">❤️❤️❤️</span><span>TIME <b id="timer">10</b></span></div>
+  <div class="tbar"><i id="tfill"></i></div>
+  <canvas id="gameCanvas" width="800" height="500"></canvas>
+  <p class="instruction">Move: ↑ ↓ ← → or W A S D</p>
+  <div id="ai"></div>
+  <div class="pad"><button class="u" data-k="arrowup">▲</button><button class="l" data-k="arrowleft">◀</button><button class="d" data-k="arrowdown">▼</button><button class="r" data-k="arrowright">▶</button></div>
+  <div><button class="sec" onclick="startLevel(cur)">RESET LEVEL</button><button class="sec" id="mb" onclick="toggleMute()">🔊 SOUND ON</button><button class="sec" onclick="quit()">LEVELS</button></div>
+</section>
+
+<div class="over" id="end"><h1 id="eT"></h1><p id="eX"></p><div id="eB"></div></div>
+
+<script>
+const FR=600,SZ=28,SPD=4;
+// gates: wall at x (door or laser); gate i is opened by button i
+const LV=[
+ {par:2,btns:[[350,220]],gates:[[680]],exit:[740,400]},
+ {par:2,btns:[[250,380]],gates:[[500,1]],exit:[700,230]},
+ {par:3,btns:[[120,400],[430,100]],gates:[[300],[560]],exit:[720,420]},
+ {par:3,btns:[[130,300],[410,420]],gates:[[280],[540,1]],exit:[700,80]},
+ {par:4,btns:[[110,420],[330,90],[550,400]],gates:[[220],[450],[650]],exit:[735,240]},
+ {par:4,btns:[[100,300],[330,430],[540,80]],gates:[[220,1],[440],[640,1]],exit:[730,420]},
+ {par:5,btns:[[80,400],[260,80],[440,420],[610,90]],gates:[[170],[350],[530],[690]],exit:[745,250]},
+ {par:5,btns:[[90,420],[270,100],[450,400],[610,110]],gates:[[180,1],[360,1],[540],[690,1]],exit:[745,380]}
+];
+const canvas=document.getElementById('gameCanvas'),ctx=canvas.getContext('2d');
+const $=i=>document.getElementById(i);
+let unlocked=1;try{unlocked=+localStorage.getItem('evo_unlocked')||1}catch(e){}
+let wasMv=false,prevOn=[],en=null,heat=[],got=[],cur=0,L,score=0,lives=3,loop=1,frame=0,ghosts=[],rec=[],player,keys={},on=[],running=false,over=false,acc=0,last=0;
+const parts=Array.from({length:80},()=>({x:Math.random()*800,y:Math.random()*500,s:Math.random()*2+1,v:Math.random()*.5+.2}));
+
+const EN={3:[420,250],4:[330,250],5:[330,250],6:[260,250],7:[270,250]};
+const WN=['AWAKENING','CIRCUIT','VOID','NEXUS','THE CORE'],WC=['#7c4dff','#00e5ff','#ff4081','#ffb300','#00e676'];
+function rng(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+for(let n=8;n<50;n++){
+ const R=rng(n*7919+13);let g=n<14?2:n<26?3:4;if(n%6===0)g=Math.max(2,g-1);
+ const st=g===2?250:g===3?210:155,s0=g===2?270:g===3?200:175,p=Math.min(.75,.15+n*.014),gates=[],btns=[];
+ for(let i=0;i<g;i++){const gx=s0+i*st;gates.push(R()<p?[gx,1]:[gx]);
+  const lo=i?gates[i-1][0]+75:110,hi=gx-35,bx=lo+(hi-lo)*(.25+R()*.5),by=(R()<.5?70:380)+R()*50;btns.push([bx|0,by|0])}
+ LV.push({par:g+1,btns,gates,exit:[745,(60+R()*380)|0]});
+ if(n>=12&&n%5!==0){const ex=gates[0][0]+45+(gates[1][0]-gates[0][0]-45)/2-14;EN[n]=[ex|0,btns[1][1]<250?400:100]}
+}
+const SIGHT=()=>160+cur*2,ESP=()=>Math.min(3.4,2+cur*.03);
+let ac,muted=false,mt=null,mi=0;
+function A(){ac=ac||new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();return ac}
+function tone(f,d,type='sine',v=.12,t0=0,f2){try{if(muted)return;const c=A(),o=c.createOscillator(),g=c.createGain(),t=c.currentTime+t0;o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(c.destination);o.start(t);o.stop(t+d)}catch(e){}}
+function snd(n){
+ if(n==='click')tone(660,.08,'square',.06);
+ if(n==='btn'){tone(520,.05,'square',.07);tone(780,.1,'triangle',.09,.04)}
+ if(n==='deny'){tone(140,.12,'square',.08);tone(110,.18,'square',.08,.1)}
+ if(n==='hover')tone(1300,.03,'sine',.025);
+ if(n==='coin'){tone(988,.08,'square',.08);tone(1319,.18,'square',.08,.07)}
+ if(n==='press'){tone(220,.12,'sawtooth',.1,0,440);tone(880,.15,'sine',.08,.08)}
+ if(n==='rewind')tone(1200,.5,'sawtooth',.08,0,120);
+ if(n==='die'){tone(300,.5,'sawtooth',.14,0,50);tone(90,.4,'square',.1)}
+ if(n==='win')[523,659,784,1047].forEach((f,k)=>tone(f,.25,'triangle',.12,k*.12));
+ if(n==='over')[392,330,262,196].forEach((f,k)=>tone(f,.35,'sawtooth',.1,k*.2));
+ if(n==='warn')tone(180,.12,'square',.07,0,140);
+ if(n==='tick')tone(900,.06,'square',.06);
+}
+function sfx(f,d){tone(f,d,'sine',.08)}
+const CH=[[220,262,330,440],[175,220,262,349],[262,330,392,523],[196,247,294,392]],BASS=[110,87.3,130.8,98];let ms=0;
+function noise(d,v,t0=0,hp=5000){try{if(muted)return;const c=A(),n=Math.floor(c.sampleRate*d),b=c.createBuffer(1,n,c.sampleRate),a=b.getChannelData(0);for(let k=0;k<n;k++)a[k]=Math.random()*2-1;const q=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain(),t=c.currentTime+t0;q.buffer=b;f.type='highpass';f.frequency.value=hp;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);q.connect(f);f.connect(g);g.connect(c.destination);q.start(t)}catch(e){}}
+function startMusic(){if(mt)return;mt=setInterval(()=>{if(muted||over||!$('game').classList.contains('on'))return;
+ const s=ms%16,bar=Math.floor(ms/16)%4,ch=CH[bar],low=FR-frame<=180;
+ if(s%4===0)tone(150,.18,'sine',.16,0,45);
+ if(s===4||s===12)noise(.12,.07,0,1800);
+ if(s%2===1||low)noise(.04,low?.05:.03,0,7000);
+ if(s%4===0||s===6||s===10)tone(BASS[bar],.22,'sawtooth',.07,0,BASS[bar]*.98);
+ if(s%2===0)tone(ch[(s/2+bar)%4]*(s%8<4?1:2),.16,'triangle',.05);
+ if(en&&s%4===2)tone(ch[(s>>2)%4]*2,.14,'square',.025);
+ ms++},112)}
+function toggleMute(){muted=!muted;$('mb').textContent=muted?'🔇 SOUND OFF':'🔊 SOUND ON'}
+function coinPos(b){return [b[0],b[1]<250?b[1]+75:b[1]-75]}
+function learn(){heat=heat.map(v=>v*.85);if(!heat.length)heat=Array(160).fill(0);rec.forEach((p,f)=>{if(f%6===0)heat[Math.min(9,Math.floor((p.y+14)/50))*16+Math.min(15,Math.floor((p.x+14)/50))]++})}
+function extras(){
+ L.btns.forEach((b,i)=>{const c=coinPos(b);if(!got[i]&&Math.hypot(player.x+14-c[0],player.y+14-c[1])<24){got[i]=1;snd('coin')}});
+ if(!en)return false;
+ let tx=player.x,ty=player.y;const d=Math.hypot(en.x-player.x,en.y-player.y);if(d<160&&frame%30===0)snd('warn');
+ if(d>SIGHT()){let best=0,bi=-1;heat.forEach((v,i)=>{const cx=(i%16)*50+25,cy=Math.floor(i/16)*50+25,sc=v/(1+Math.hypot(cx-en.x,cy-en.y)/200);if(sc>best){best=sc;bi=i}});if(bi<0)return false;tx=(bi%16)*50+25;ty=Math.floor(bi/16)*50+25}
+ const vx=tx-en.x,vy=ty-en.y,m=Math.hypot(vx,vy)||1,nx=en.x+vx/m*ESP(),ny=en.y+vy/m*ESP();
+ const blk=x=>L.gates.some((g,i)=>!g[1]&&!on[i]&&x+SZ>g[0]&&x<g[0]+45),safe=L.btns.some(b=>Math.hypot(nx+14-b[0],ny+14-b[1])<55);
+ if(!safe){if(!blk(nx))en.x=Math.max(0,Math.min(800-SZ,nx));en.y=Math.max(0,Math.min(500-SZ,ny))}
+ return Math.hypot(en.x-player.x,en.y-player.y)<26;
+}
+function senti(){if(!en)return;let bi=-1,b=0;heat.forEach((v,i)=>{if(v>b){b=v;bi=i}});
+ const m=bi<0?'No data yet. I will learn where you like to go.':`I learned you favour the ${['left','centre','right'][Math.min(2,Math.floor((bi%16)/5.34))]} ${Math.floor(bi/16)<5?'top':'bottom'} area. I am heading there. Change your routes!`;
+ $('ai').innerHTML+='<br>👾 <b>SENTINEL AI</b>: '+m}
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));$('end').classList.remove('on');if(id==='levels')grid()}
+function grid(){let h='';LV.forEach((_,i)=>{const w=Math.floor(i/10),ok=i<unlocked;
+ if(i%10===0)h+=`<div class="wh" style="--c:${WC[w]}">WORLD ${w+1} · ${WN[w]}</div>`;
+ h+=`<div class="lv ${ok?'':'lock'}" style="--c:${WC[w]}" ${ok?`onclick="startLevel(${i})"`:''}><span>${i+1}</span><small>${i+1<unlocked?'✓':ok?'🔓':'🔒'}</small></div>`});$('lvGrid').innerHTML=h}
+function startLevel(i){cur=i;L=LV[i];if(i===0)score=0;lives=3;loop=1;ghosts=[];over=false;rec=[];heat=Array(160).fill(0);got=[];startMusic();$('end').classList.remove('on');show('game');$('hLvl').textContent=(i+1)+' · '+WN[Math.floor(i/10)];document.documentElement.style.setProperty('--acc',WC[Math.floor(i/10)]);resetLoop(false);if(!running){running=true;last=performance.now();requestAnimationFrame(tick)}}
+function quit(){over=true;show('levels')}
+function resetLoop(remember){learn();prevOn=[];en=EN[cur]?{x:EN[cur][0],y:EN[cur][1]}:null;
+  if(remember){snd('rewind');ghosts.push(rec.slice());if(ghosts.length>L.gates.length)ghosts.shift();loop++}
+  rec=[];frame=0;player={x:60,y:60};on=L.btns.map(()=>false);hud();ai();senti();
+}
+function near(p,b){return Math.hypot(p.x+SZ/2-b[0],p.y+SZ/2-b[1])<35}
+function hud(){$('hLoop').textContent=loop;$('hScore').textContent=score;$('hLives').textContent='❤️'.repeat(lives)}
+function ai(){
+  const el=$('ai'),t='🤖 <b>PAST SELF AI</b><br>';
+  if(!ghosts.length){el.innerHTML=t+'No memory yet. Stand on a button until time runs out — I will remember it.';return}
+  el.innerHTML=t+ghosts.map((g,k)=>{
+    let h=null;for(let f=0;f<g.length&&!h;f++)L.btns.forEach((b,i)=>{if(!h&&near(g[f],b))h={i,t:f/60}});
+    return h?`Past Self ${k+1}: stepped on Button ${'ABCD'[h.i]} at ${h.t.toFixed(1)}s → Decision: <b>PRESS ${'ABCD'[h.i]}</b> to open Gate ${'ABCD'[h.i]} for you.`:`Past Self ${k+1}: reached no button → Decision: <b>WAIT</b>.`}).join('<br>');
+}
+function step(){
+  let dx=0,dy=0;
+  if(keys.arrowleft||keys.a)dx-=SPD;if(keys.arrowright||keys.d)dx+=SPD;
+  if(keys.arrowup||keys.w)dy-=SPD;if(keys.arrowdown||keys.s)dy+=SPD;
+  const gp=ghosts.map(g=>g[Math.min(frame,g.length-1)]);
+  on=L.btns.map(b=>near(player,b)||gp.some(p=>near(p,b)));if(on.some((v,k)=>v&&!prevOn[k]))snd('press');prevOn=on.slice();
+  const blocked=x=>L.gates.some((g,i)=>!g[1]&&!on[i]&&x+SZ>g[0]&&x<g[0]+45);
+  const nx=Math.max(0,Math.min(800-SZ,player.x+dx));if(!blocked(nx))player.x=nx;else if(dx&&frame%10===0)tone(80,.06,"square",.08);
+  player.y=Math.max(0,Math.min(500-SZ,player.y+dy));
+  const lp=rec[rec.length-1]||{x:60,y:60},mv=lp.x!==player.x||lp.y!==player.y;if(mv&&frame%7===0)tone(180+player.x/4,.07,'triangle',.09,0,120+player.x/5);if(mv&&!wasMv)tone(300,.12,'sawtooth',.05,0,700);wasMv=mv;if(frame%10===0&&ghosts.some(g=>{const a=g[Math.min(frame,g.length-1)],b=g[Math.max(0,Math.min(frame-1,g.length-1))];return a.x!==b.x||a.y!==b.y}))tone(120,.08,'sine',.05,0,90);rec.push({x:player.x,y:player.y});frame++;if(extras())return die();if(FR-frame<=180&&(FR-frame)%60===0)snd('tick');
+  $('timer').textContent=Math.ceil((FR-frame)/60);$('tfill').style.width=((FR-frame)/6)+'%';$('timer').classList.toggle('low',FR-frame<=180);
+  if(L.gates.some((g,i)=>g[1]&&!on[i]&&player.x+SZ>g[0]+16&&player.x<g[0]+29))return die();
+  const e=L.exit;
+  if(player.x<e[0]+35&&player.x+SZ>e[0]&&player.y<e[1]+35&&player.y+SZ>e[1])return win();
+  if(frame>=FR)resetLoop(true);
+}
+function die(){snd('die');lives--;if(lives<=0){over=true;snd('over');fin('GAME OVER','The loop won.',`<button onclick="startLevel(${cur})">TRY AGAIN</button><button class="sec" onclick="quit()">LEVELS</button>`)}else resetLoop(false)}
+function win(){
+  snd('win');over=true;const pts=100+Math.round((FR-frame)/12)+(loop<=L.par?100:0)+10*got.filter(Boolean).length;score+=pts;
+  if(cur+1>=unlocked){unlocked=Math.min(LV.length,cur+2);try{localStorage.setItem('evo_unlocked',unlocked)}catch(e){}}
+  const fin_=cur===LV.length-1;
+  fin(fin_?'🏆 YOU BROKE THE LOOP!':'🎉 LEVEL COMPLETE!',`+${pts} points · Loops used: ${loop} (target ${L.par}) · Total score: ${score}`,
+   fin_?`<button onclick="show('home')">HOME</button>`:`<button onclick="startLevel(${cur+1})">NEXT LEVEL</button><button class="sec" onclick="quit()">LEVELS</button>`);
+}
+function fin(t,x,b){$('eT').textContent=t;$('eX').textContent=x;$('eB').innerHTML=b;$('end').classList.add('on')}
+function glow(x,y,w,h,c,b){ctx.shadowBlur=b;ctx.shadowColor=c;ctx.fillStyle=c;ctx.fillRect(x,y,w,h);ctx.shadowBlur=0}
+function draw(){
+  const g=ctx.createLinearGradient(0,0,800,500);g.addColorStop(0,'#050014');g.addColorStop(.5,'#09002b');g.addColorStop(1,'#001a2b');
+  ctx.fillStyle=g;ctx.fillRect(0,0,800,500);
+  for(const p of parts){p.y+=p.v;if(p.y>500){p.y=0;p.x=Math.random()*800}ctx.fillStyle='rgba(0,255,255,.6)';ctx.beginPath();ctx.arc(p.x,p.y,p.s,0,7);ctx.fill()}
+  const pu=Math.sin(Date.now()*.002)*10;ctx.strokeStyle='rgba(100,0,255,.15)';ctx.lineWidth=3;
+  ctx.beginPath();ctx.arc(400,250,180+pu,0,7);ctx.stroke();ctx.beginPath();ctx.arc(400,250,240-pu,0,7);ctx.stroke();
+  ctx.textAlign='center';
+  L.btns.forEach((b,i)=>{const c=on[i]?'#00ff66':'red';ctx.shadowBlur=25;ctx.shadowColor=c;ctx.fillStyle=c;ctx.beginPath();ctx.arc(b[0],b[1],18,0,7);ctx.fill();ctx.shadowBlur=0;
+    ctx.fillStyle='#fff';ctx.font='bold 14px Arial';ctx.fillText('BUTTON '+'ABCD'[i],b[0],b[1]+40)});
+  L.gates.forEach((q,i)=>{const o=on[i];ctx.globalAlpha=o?.2:1;
+    if(q[1])glow(q[0]+19,0,8,500,'#ff2d55',25);else glow(q[0],0,45,500,o?'#00ff88':'#8b00ff',20);
+    ctx.globalAlpha=1;ctx.fillStyle='#fff';ctx.font='14px Arial';ctx.fillText((q[1]?'LASER ':'DOOR ')+'ABCD'[i],q[0]+23,18)});
+  L.btns.forEach((b,i)=>{if(got[i])return;const c=coinPos(b);ctx.fillStyle='gold';ctx.shadowBlur=15;ctx.shadowColor='gold';ctx.beginPath();ctx.arc(c[0],c[1],9,0,7);ctx.fill();ctx.shadowBlur=0});const e=L.exit;glow(e[0],e[1],35,35,'gold',25);ctx.fillStyle='#111';ctx.font='18px Arial';ctx.fillText('★',e[0]+17,e[1]+24);
+  ghosts.forEach(g=>{const p=g[Math.min(frame,g.length-1)];ctx.globalAlpha=.8;glow(p.x,p.y,SZ,SZ,'#b24dff',25);ctx.globalAlpha=1});
+  if(en){glow(en.x,en.y,SZ,SZ,'#ff2d55',28);ctx.fillStyle='#fff';ctx.fillRect(en.x+6,en.y+9,6,6);ctx.fillRect(en.x+16,en.y+9,6,6)}glow(player.x,player.y,SZ,SZ,'cyan',30);ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(player.x+14,player.y+14,5,0,7);ctx.fill();
+}
+function tick(now){
+  acc+=Math.min(now-last,100);last=now;
+  if($('game').classList.contains('on')&&!over){while(acc>=1000/60&&!over){acc-=1000/60;step()}draw()}else acc=0;
+  requestAnimationFrame(tick);
+}
+document.addEventListener('pointerdown',e=>{const b=e.target.closest('button,.lv');if(!b||b.closest('.pad'))return;snd(b.classList.contains('lock')?'deny':'btn')});
+document.addEventListener('pointerover',e=>{const b=e.target.closest('button,.lv');if(b&&!b.closest('.pad')&&e.pointerType==='mouse'&&!b.contains(e.relatedTarget))snd('hover')});
+document.querySelectorAll('.pad button').forEach(b=>{const k=b.dataset.k;b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true});['pointerup','pointerleave','pointercancel'].forEach(v=>b.addEventListener(v,()=>keys[k]=false))});
+addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key.startsWith('Arrow'))e.preventDefault()});
+addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
+</script>
+</body>
+</html>
